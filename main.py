@@ -71,11 +71,63 @@ def create_product(product):
     response = requests.post(url, headers=headers, json={'data': payload})
     response.raise_for_status()
 
+    return response.json()['data']['id']
+
+
+def download_picture(product):
+    product_name = slugify(product['name'])
+    filename = f"pictures/{product_name}.jpg"
+    url = product['product_image']['url']
+
+    response = requests.get(url)
+    with open(filename, 'wb') as file:
+        file.write(response.content)
+    return file.name
+
+
+def create_picture(picture):
+    token = get_authorization_token()
+    url = 'https://api.moltin.com/v2/files'
+    # file = download_picture(product)
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    files = {
+        'public': True,
+        'file': open(picture, 'rb')
+    }
+    response = requests.post(url, headers=headers, files=files)
+    response.raise_for_status()
+
+    return response.json()['data']['id']
+
+
+def link_picture_to_product(product_id, picture_id):
+    token = get_authorization_token()
+    url = f'https://api.moltin.com/v2/products/{product_id}/relationships/main-image'
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    payload = {
+        'type': 'main_image',
+        'id': picture_id
+    }
+    response = requests.post(url, headers=headers, json={'data': payload})
+    response.raise_for_status()
+
     return response.json()
 
 
-def create_picture(product):
-    pass
+def load_products_to_shop(menu_file):
+    with open(menu_file, 'r') as menu_file:
+        menu = json.load(menu_file)
+
+    for product in menu:
+        picture = download_picture(product)
+
+        product_id = create_product(product)
+        picture_id = create_picture(picture)
+        link_picture_to_product(product_id, picture_id)
 
 
 if __name__ == '__main__':
@@ -83,9 +135,3 @@ if __name__ == '__main__':
 
     with open('addresses.json', 'r') as add_file:
         addresses = json.load(add_file)
-
-    with open('menu.json', 'r') as menu_file:
-        menu = json.load(menu_file)
-
-    good = menu[0]
-    print(create_product(good))
