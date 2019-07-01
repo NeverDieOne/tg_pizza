@@ -53,7 +53,7 @@ def create_product(product):
     headers = {
         'Authorization': f'Bearer {token}'
     }
-    payload = {
+    data = {
         'type': 'product',
         'name': product['name'],
         'slug': slugify(product['name']),
@@ -68,7 +68,7 @@ def create_product(product):
         'commodity_type': 'physical',
         'status': 'live'
     }
-    response = requests.post(url, headers=headers, json={'data': payload})
+    response = requests.post(url, headers=headers, json={'data': data})
     response.raise_for_status()
 
     return response.json()['data']['id']
@@ -108,11 +108,11 @@ def link_picture_to_product(product_id, picture_id):
     headers = {
         'Authorization': f'Bearer {token}'
     }
-    payload = {
+    data = {
         'type': 'main_image',
         'id': picture_id
     }
-    response = requests.post(url, headers=headers, json={'data': payload})
+    response = requests.post(url, headers=headers, json={'data': data})
     response.raise_for_status()
 
     return response.json()
@@ -130,8 +130,74 @@ def load_products_to_shop(menu_file):
         link_picture_to_product(product_id, picture_id)
 
 
+def create_flow(name, description):
+    token = get_authorization_token()
+    url = 'https://api.moltin.com/v2/flows'
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    data = {
+        'type': 'flow',
+        'name': name,
+        'slug': slugify(name),
+        'description': description,
+        'enabled': True
+    }
+    response = requests.post(url, headers=headers, json={'data': data})
+    response.raise_for_status()
+
+    return response.json()
+
+
+def create_field(name, description, flow_id):
+    token = get_authorization_token()
+    url = 'https://api.moltin.com/v2/fields'
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    data = {
+        'type': 'field',
+        'name': name,
+        'slug': slugify(name),
+        'field_type': 'string',
+        'description': description,
+        'required': False,
+        'unique': False,
+        'default': '',
+        'enabled': True,
+        'relationships': {
+            'flow': {
+                'data': {
+                    'type': 'flow',
+                    'id': flow_id
+                }
+            }
+        }
+    }
+    response = requests.post(url, headers=headers, json={'data': data})
+    response.raise_for_status()
+
+    return response.json()
+
+
+def create_entry(flow_slug, shop):
+    token = get_authorization_token()
+    url = f'https://api.moltin.com/v2/flows/{flow_slug}/entries'
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    data = {
+        'type': 'entry',
+        'address': shop['address']['full'],
+        'alias': shop['alias'],
+        'longitude': shop['coordinates']['lon'],
+        'latitude': shop['coordinates']['lat']
+    }
+    response = requests.post(url, headers=headers, json={'data': data})
+    response.raise_for_status()
+
+    return response.json()
+
+
 if __name__ == '__main__':
     load_dotenv()
-
-    with open('addresses.json', 'r') as add_file:
-        addresses = json.load(add_file)
