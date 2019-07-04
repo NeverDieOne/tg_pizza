@@ -31,9 +31,7 @@ def handle_menu(bot, update):
         utils.show_cart(query, bot, update)
         return "HANDLE_CART"
     else:
-        keyboard = [[InlineKeyboardButton('1 кг', callback_data=f'1kg, {query.data}'),
-                     InlineKeyboardButton('5 кг', callback_data=f'5kg, {query.data}'),
-                     InlineKeyboardButton('10 кг', callback_data=f'10kg, {query.data}')],
+        keyboard = [[InlineKeyboardButton('Положить в корзину', callback_data=f'add, {query.data}')],
                     [InlineKeyboardButton('Назад', callback_data='back')],
                     [InlineKeyboardButton('Корзина', callback_data='cart')]]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -44,15 +42,11 @@ def handle_menu(bot, update):
 
         name = good_info['name']
         description = good_info['description']
-        price_per_kg = f"{good_info['meta']['display_price']['with_tax']['formatted']} per kg"
-        if good_info['meta']['stock']['availability'] == 'in-stock':
-            on_stock_kg = f"{good_info['meta']['stock']['level']} on stock"
-        else:
-            on_stock_kg = 'Товара нет в наличии'
+        price = f"{good_info['price'][0]['amount']}"
 
         bot.send_photo(chat_id=query.message.chat_id,
                        photo=good_photo,
-                       caption=f"{name}\n\n{price_per_kg}\n{on_stock_kg}\n\n{description}",
+                       caption=f"{name}\nСтоимость: {price}\n\n{description}",
                        reply_markup=reply_markup)
         bot.delete_message(chat_id=query.message.chat_id,
                            message_id=query.message.message_id)
@@ -81,18 +75,10 @@ def handle_description(bot, update):
     elif info[0] == 'cart':
         utils.show_cart(query, bot, update)
         return "HANDLE_CART"
-    elif info[0] == '1kg':
+    elif info[0] == 'add':
         moltin.add_product_to_cart(cart_id=query.message.chat_id,
                                    product_id=info[1],
                                    product_amount=1)
-    elif info[0] == '5kg':
-        moltin.add_product_to_cart(cart_id=query.message.chat_id,
-                                   product_id=info[1],
-                                   product_amount=5)
-    elif info[0] == '10kg':
-        moltin.add_product_to_cart(cart_id=query.message.chat_id,
-                                   product_id=info[1],
-                                   product_amount=10)
 
 
 def handle_cart(bot, update):

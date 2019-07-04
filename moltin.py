@@ -217,7 +217,8 @@ def get_or_create_cart(cart_id):
     token = get_authorization_token()
     url = f'https://api.moltin.com/v2/carts/{cart_id}'
     headers = {
-        'Authorization': f'Bearer {token}'
+        'Authorization': f'Bearer {token}',
+        'X-MOLTIN-CURRENCY': 'RUB'
     }
     response = requests.get(url, headers=headers)
     response.raise_for_status()
@@ -229,9 +230,10 @@ def get_items_in_cart(cart_id):
     token = get_authorization_token()
     url = f'https://api.moltin.com/v2/carts/{cart_id}/items'
     headers = {
-        'Authorization': f'Bearer {token}'
+        'Authorization': f'Bearer {token}',
+
     }
-    response = requests.get(url, headers, headers=headers)
+    response = requests.get(url, headers=headers)
     response.raise_for_status()
 
     return response.json()['data']
@@ -241,7 +243,8 @@ def add_product_to_cart(cart_id, product_id, product_amount):
     token = get_authorization_token()
     url = f'https://api.moltin.com/v2/carts/{cart_id}/items'
     headers = {
-        'Authorization': f'Bearer {token}'
+        'Authorization': f'Bearer {token}',
+        'X-MOLTIN-CURRENCY': 'RUB'
     }
     payload = {
         'data': {

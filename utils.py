@@ -1,5 +1,6 @@
 import moltin
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from pprint import pprint
 
 
 def show_cart(query, bot, update):
@@ -11,16 +12,16 @@ def show_cart(query, bot, update):
         name = good['name']
         description = good['description']
         numbers = good['quantity']
+
         price = good['meta']['display_price']['with_tax']
-        price_per_kg = price['unit']['formatted']
         total_price = price['value']['formatted']
-        list_reply.append(f"{name}\n{description}\n{price_per_kg} per kg\n{numbers}kg in cart for {total_price}\n\n")
-    list_reply.append(f'Total price: ${total / 100:.2f}')
+        list_reply.append(f"{name}\n{description}\n{numbers} пицц(а) в корзине на сумму {total_price}\n\n")
+    list_reply.append(f'К оплате: {total} руб.')
     reply = ''.join(list_reply)
 
     keyboard = [[InlineKeyboardButton(f"Удалить товар {good['name']}", callback_data=good['id'])] for good in goods]
     keyboard.append([InlineKeyboardButton('В меню', callback_data='menu')])
-    keyboard.append([InlineKeyboardButton('Оплата', callback_data='payment')])
+    keyboard.append([InlineKeyboardButton('Оплатить', callback_data='payment')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     bot.send_message(text=reply,
