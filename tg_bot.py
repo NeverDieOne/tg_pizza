@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import moltin
 import utils
 from yandex_geocoder import Client, exceptions
+import json
 
 database = None
 
@@ -124,23 +125,27 @@ def handle_waiting(bot, update):
     if current_pos:
         flow_slug = 'pizzeria'
 
+        moltin.create_customer_address(current_pos, update.message.chat_id)
+
         entries = moltin.get_entries(flow_slug)
         closest_entry = utils.get_closest_entry(current_pos, entries)
         entry = moltin.get_entry(flow_slug, closest_entry['id'])
+
+        supplier = entry['telegram-id']
 
         _distance = round(closest_entry["distance"], 1)
 
         if closest_entry['distance'] < 0.5:
             reply = f'Может, заребере пиццу из нашей пиццерии неподалеку? Она всего в {_distance} км от Вас! ' \
                 f'Вот ее адрес: {entry["address"]}\n\nА можем и бесплатно доставить, нам не сложно c:'
-            reply_markup = utils.create_delivery_menu()
+            reply_markup = utils.create_delivery_menu(supplier, current_pos)
         elif closest_entry['distance'] < 5:
             reply = f'Похоже, придется ехать до Вас на самокате. ' \
                 f'Доставка будет стоить 100 рублей. Доставляем или самовывоз?'
-            reply_markup = utils.create_delivery_menu()
+            reply_markup = utils.create_delivery_menu(supplier, current_pos)
         elif closest_entry['distance'] < 20:
             reply = f'А Вы не так близки к нам :c Доставка будет стоить 300 рублей.'
-            reply_markup = utils.create_delivery_menu()
+            reply_markup = utils.create_delivery_menu(supplier, current_pos)
         else:
             reply = f'Простите, но так далеко пиццу не доставим. Ближайшая пиццерия аж в {_distance} км от Вас!'
             reply_markup = None
@@ -158,10 +163,21 @@ def handle_waiting(bot, update):
 def handle_delivery(bot, update):
     query = update.callback_query
 
+    try:
+        data = json.loads(query.data)
+    except:
+        pass
+
     if query.data == 'pickup':
-        pass
-    elif query.data == 'delivery':
-        pass
+        print('pickup')
+    elif data:
+        id_tg = data[0]
+        pos = data[1]
+        bot.send_location(
+            chat_id=id_tg,
+            longitude=pos[0],
+            latitude=pos[1]
+        )
 
 
 def handle_users_reply(bot, update):

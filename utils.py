@@ -2,6 +2,7 @@ import moltin
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import math
 from geopy.distance import distance
+import json
 from pprint import pprint
 
 
@@ -89,8 +90,11 @@ def get_closest_entry(current_pos, entries):
     return min(result, key=min_dist)
 
 
-def create_delivery_menu():
-    keyboard = [[InlineKeyboardButton('Доставка', callback_data='delivery'),
+def create_delivery_menu(suplier, current_pos):
+    data = [suplier, current_pos]
+    data = json.dumps(data)
+
+    keyboard = [[InlineKeyboardButton('Доставка', callback_data=f'{data}'),
                  InlineKeyboardButton('Самовывоз', callback_data='pickup')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 

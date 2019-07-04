@@ -179,18 +179,17 @@ def create_field(name, description, flow_id):
     return response.json()
 
 
-def create_entry(flow_slug, shop):
+def create_customer_address(pos, cart_id):
     token = get_authorization_token()
-    url = f'https://api.moltin.com/v2/flows/{flow_slug}/entries'
+    url = f'https://api.moltin.com/v2/flows/customer-address/entries'
     headers = {
         'Authorization': f'Bearer {token}'
     }
     data = {
         'type': 'entry',
-        'address': shop['address']['full'],
-        'alias': shop['alias'],
-        'longitude': shop['coordinates']['lon'],
-        'latitude': shop['coordinates']['lat']
+        'longitude': pos[0],
+        'latitude': pos[1],
+        'cart-id': cart_id
     }
     response = requests.post(url, headers=headers, json={'data': data})
     response.raise_for_status()
@@ -347,6 +346,18 @@ def get_entry(flow_slug, entry_id):
     response.raise_for_status()
 
     return response.json()['data']
+
+
+def get_flow():
+    token = get_authorization_token()
+    url = 'https://api.moltin.com/v2/flows'
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    respone = requests.get(url, headers=headers)
+    respone.raise_for_status()
+
+    return respone.json()['data']
 
 
 if __name__ == '__main__':
