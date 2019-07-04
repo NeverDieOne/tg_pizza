@@ -1,6 +1,6 @@
 import moltin
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from pprint import pprint
+import math
 
 
 def show_cart(query, bot, update):
@@ -35,7 +35,7 @@ def get_pagination(per_page):
     goods = moltin.get_goods()
 
     items_per_page = per_page
-    max_page = len(goods) // items_per_page
+    max_page = math.ceil(len(goods) / items_per_page)
 
     start = 0
     end = items_per_page
@@ -51,7 +51,8 @@ def get_pagination(per_page):
 
 
 def create_menu_markup(page=0):
-    goods = get_pagination(8)
+    goods_per_page = 8
+    goods = get_pagination(goods_per_page)
     keyboard = [[InlineKeyboardButton(good['name'], callback_data=good['id'])] for good in goods[page]]
 
     if page == len(goods) - 1:
