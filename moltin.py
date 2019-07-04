@@ -88,7 +88,6 @@ def download_picture(product):
 def create_picture(picture):
     token = get_authorization_token()
     url = 'https://api.moltin.com/v2/files'
-    # file = download_picture(product)
     headers = {
         'Authorization': f'Bearer {token}'
     }
@@ -324,6 +323,30 @@ def get_customer_by_id(customer_id):
     response.raise_for_status()
 
     return response.json()
+
+
+def get_entries(flow_slug):
+    token = get_authorization_token()
+    url = f'https://api.moltin.com/v2/flows/{flow_slug}/entries'
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+
+    return response.json()['data']
+
+
+def get_entry(flow_slug, entry_id):
+    token = get_authorization_token()
+    url = f'https://api.moltin.com/v2/flows/{flow_slug}/entries/{entry_id}'
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+
+    return response.json()['data']
 
 
 if __name__ == '__main__':

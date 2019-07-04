@@ -7,6 +7,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from dotenv import load_dotenv
 import moltin
 import utils
+from yandex_geocoder import Client, exceptions
 
 database = None
 
@@ -94,24 +95,73 @@ def handle_cart(bot, update):
                               reply_markup=reply_markup)
         return "HANDLE_MENU"
     elif query.data == 'payment':
-        bot.edit_message_text(text='Введите телефон для связи',
+        bot.edit_message_text(text='Пришлите нам Ваш адрес текстом или геолокацию.',
                               chat_id=query.message.chat_id,
                               message_id=query.message.message_id)
-        return "WAITING_PHONE_NUMBER"
+        return "HANDLE_WAITING"
     else:
         moltin.delete_item_from_basket(query.message.chat_id, query.data)
         utils.show_cart(query, bot, update)
         return "HANDLE_CART"
 
 
-def handle_phone_number(bot, update):
-    first_name = update['message']['chat']['first_name']
-    last_name = update['message']['chat']['last_name']
-    phone = update.message.text
+def handle_waiting(bot, update):
+    if update.message.text:
+        try:
+            current_pos = Client.coordinates(update.message.text)  # Адрес возвращается (str, str)
+        except exceptions.YandexGeocoderAddressNotFound:
+            current_pos = None
+            bot.send_message(text='Не могу распознать этот адрес',
+                             chat_id=update.message.chat_id)
+    else:
+        message = None
+        if update.edited_message:
+            message = update.edited_message
+        else:
+            message = update.message
+        current_pos = (message.location.longitude, message.location.latitude)  # Адрес возвращается (float, float)
 
-    moltin.create_customer(first_name, last_name, phone)
-    bot.send_message(text=f'Вы прислали мне этот номер: {phone}\nС вами скоро свяжуться',
-                     chat_id=update.message.chat_id)
+    if current_pos:
+        flow_slug = 'pizzeria'
+
+        entries = moltin.get_entries(flow_slug)
+        closest_entry = utils.get_closest_entry(current_pos, entries)
+        entry = moltin.get_entry(flow_slug, closest_entry['id'])
+
+        _distance = round(closest_entry["distance"], 1)
+
+        if closest_entry['distance'] < 0.5:
+            reply = f'Может, заребере пиццу из нашей пиццерии неподалеку? Она всего в {_distance} км от Вас! ' \
+                f'Вот ее адрес: {entry["address"]}\n\nА можем и бесплатно доставить, нам не сложно c:'
+            reply_markup = utils.create_delivery_menu()
+        elif closest_entry['distance'] < 5:
+            reply = f'Похоже, придется ехать до Вас на самокате. ' \
+                f'Доставка будет стоить 100 рублей. Доставляем или самовывоз?'
+            reply_markup = utils.create_delivery_menu()
+        elif closest_entry['distance'] < 20:
+            reply = f'А Вы не так близки к нам :c Доставка будет стоить 300 рублей.'
+            reply_markup = utils.create_delivery_menu()
+        else:
+            reply = f'Простите, но так далеко пиццу не доставим. Ближайшая пиццерия аж в {_distance} км от Вас!'
+            reply_markup = None
+            bot.send_message(text=reply,
+                             chat_id=update.message.chat_id)
+
+        if reply_markup:
+            bot.send_message(text=reply,
+                             chat_id=update.message.chat_id,
+                             reply_markup=reply_markup)
+
+            return "HANDLE_DELIVERY"
+
+
+def handle_delivery(bot, update):
+    query = update.callback_query
+
+    if query.data == 'pickup':
+        pass
+    elif query.data == 'delivery':
+        pass
 
 
 def handle_users_reply(bot, update):
@@ -134,7 +184,8 @@ def handle_users_reply(bot, update):
         'HANDLE_MENU': handle_menu,
         'HANDLE_DESCRIPTION': handle_description,
         'HANDLE_CART': handle_cart,
-        'WAITING_PHONE_NUMBER': handle_phone_number
+        'HANDLE_WAITING': handle_waiting,
+        'HANDLE_DELIVERY': handle_delivery
     }
     state_handler = states_functions[user_state]
     next_state = state_handler(bot, update)
@@ -168,5 +219,6 @@ if __name__ == '__main__':
     dispatcher.add_handler(CallbackQueryHandler(handle_users_reply))
     dispatcher.add_handler(MessageHandler(Filters.text, handle_users_reply))
     dispatcher.add_handler(CommandHandler('start', handle_users_reply))
+    dispatcher.add_handler(MessageHandler(Filters.location, handle_waiting, edited_updates=True))
     dispatcher.add_error_handler(error_callback)
     updater.start_polling()

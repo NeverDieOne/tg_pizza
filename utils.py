@@ -1,6 +1,8 @@
 import moltin
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import math
+from geopy.distance import distance
+from pprint import pprint
 
 
 def show_cart(query, bot, update):
@@ -64,6 +66,32 @@ def create_menu_markup(page=0):
                          InlineKeyboardButton('Вперед', callback_data=f'pag, {page + 1}')])
 
     keyboard.append([InlineKeyboardButton('Корзина', callback_data='cart')])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    return reply_markup
+
+
+def min_dist(entry):
+    return entry['distance']
+
+
+def get_closest_entry(current_pos, entries):
+    result = []
+
+    for entry in entries:
+        _id = entry['id']
+        pos = entry['longitude'], entry['latitude']
+
+        _distance = distance(current_pos, pos).km
+
+        result.append({'id': _id, 'distance': _distance})
+
+    return min(result, key=min_dist)
+
+
+def create_delivery_menu():
+    keyboard = [[InlineKeyboardButton('Доставка', callback_data='delivery'),
+                 InlineKeyboardButton('Самовывоз', callback_data='pickup')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     return reply_markup
