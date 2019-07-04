@@ -15,7 +15,7 @@ def show_cart(query, bot, update):
 
         price = good['meta']['display_price']['with_tax']
         total_price = price['value']['formatted']
-        list_reply.append(f"{name}\n{description}\n{numbers} пицц(а) в корзине на сумму {total_price}\n\n")
+        list_reply.append(f"{name}\n{description}\n{numbers} пицц(а) в корзине на сумму {total_price} руб.\n\n")
     list_reply.append(f'К оплате: {total} руб.')
     reply = ''.join(list_reply)
 
@@ -29,3 +29,40 @@ def show_cart(query, bot, update):
                      chat_id=query.message.chat_id)
     bot.delete_message(chat_id=query.message.chat_id,
                        message_id=query.message.message_id)
+
+
+def get_pagination(per_page):
+    goods = moltin.get_goods()
+
+    items_per_page = per_page
+    max_page = len(goods) // items_per_page
+
+    start = 0
+    end = items_per_page
+
+    paginated_goods = []
+
+    for _ in range(max_page):
+        paginated_goods.append(goods[start: end])
+        start = end
+        end += items_per_page
+
+    return paginated_goods
+
+
+def create_menu_markup(page=0):
+    goods = get_pagination(8)
+    keyboard = [[InlineKeyboardButton(good['name'], callback_data=good['id'])] for good in goods[page]]
+
+    if page == len(goods) - 1:
+        keyboard.append([InlineKeyboardButton('Назад', callback_data=f'pag, {page - 1}')])
+    elif page == 0:
+        keyboard.append([InlineKeyboardButton('Вперед', callback_data=f'pag, {page + 1}')])
+    else:
+        keyboard.append([InlineKeyboardButton('Назад', callback_data=f'pag, {page - 1}'),
+                         InlineKeyboardButton('Вперед', callback_data=f'pag, {page + 1}')])
+
+    keyboard.append([InlineKeyboardButton('Корзина', callback_data='cart')])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    return reply_markup

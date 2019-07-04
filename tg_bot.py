@@ -12,15 +12,11 @@ database = None
 
 
 def start(bot, update):
-    goods = moltin.get_goods()
-
     moltin.get_or_create_cart(update.message.chat_id)
 
-    keyboard = [[InlineKeyboardButton(good['name'], callback_data=good['id'])] for good in goods]
-    keyboard.append([InlineKeyboardButton('Корзина', callback_data='cart')])
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    reply_markup = utils.create_menu_markup()
 
-    update.message.reply_text(text='Please choose:', reply_markup=reply_markup)
+    update.message.reply_text(text='Выберите товар:', reply_markup=reply_markup)
     return "HANDLE_MENU"
 
 
@@ -30,6 +26,14 @@ def handle_menu(bot, update):
     if query.data == 'cart':
         utils.show_cart(query, bot, update)
         return "HANDLE_CART"
+    elif 'pag' in query.data:
+        page = query.data.split(', ')[1]
+        reply_markup = utils.create_menu_markup(int(page))
+
+        bot.edit_message_text(text='Выберите товар:',
+                              chat_id=query.message.chat_id,
+                              message_id=query.message.message_id,
+                              reply_markup=reply_markup)
     else:
         keyboard = [[InlineKeyboardButton('Положить в корзину', callback_data=f'add, {query.data}')],
                     [InlineKeyboardButton('Назад', callback_data='back')],
@@ -42,11 +46,11 @@ def handle_menu(bot, update):
 
         name = good_info['name']
         description = good_info['description']
-        price = f"{good_info['price'][0]['amount']}"
+        price = good_info['price'][0]['amount']
 
         bot.send_photo(chat_id=query.message.chat_id,
                        photo=good_photo,
-                       caption=f"{name}\nСтоимость: {price}\n\n{description}",
+                       caption=f"{name}\nСтоимость: {price} руб.\n\n{description}",
                        reply_markup=reply_markup)
         bot.delete_message(chat_id=query.message.chat_id,
                            message_id=query.message.message_id)
@@ -58,14 +62,11 @@ def handle_description(bot, update):
     info = query.data.split(', ')
 
     if info[0] == 'back':
-        goods = moltin.get_goods()
-        keyboard = [[InlineKeyboardButton(good['name'], callback_data=good['id'])] for good in goods]
-        keyboard.append([InlineKeyboardButton('Корзина', callback_data='cart')])
-        reply_markup = InlineKeyboardMarkup(keyboard)
+        reply_markup = utils.create_menu_markup()
 
         #  Если здесь использовать edit_message_text, то будет ошибка: 'NoneType' object has no attribute 'reply_text'
         #  т.к. в описании картинки не text, а caption
-        bot.send_message(text='Please choose:',
+        bot.send_message(text='Выберите товар:',
                          reply_markup=reply_markup,
                          chat_id=query.message.chat_id)
         bot.delete_message(chat_id=query.message.chat_id,
@@ -85,12 +86,9 @@ def handle_cart(bot, update):
     query = update.callback_query
 
     if query.data == 'menu':
-        goods = moltin.get_goods()
-        keyboard = [[InlineKeyboardButton(good['name'], callback_data=good['id'])] for good in goods]
-        keyboard.append([InlineKeyboardButton('Корзина', callback_data='cart')])
-        reply_markup = InlineKeyboardMarkup(keyboard)
+        reply_markup = utils.create_menu_markup()
 
-        bot.edit_message_text(text='Please choose:',
+        bot.edit_message_text(text='Выберите товар:',
                               chat_id=query.message.chat_id,
                               message_id=query.message.message_id,
                               reply_markup=reply_markup)
