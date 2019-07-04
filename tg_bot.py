@@ -160,9 +160,12 @@ def handle_waiting(bot, update):
             return "HANDLE_DELIVERY"
 
 
+def pizza_error(bot, job):
+    bot.send_message(chat_id=job.context, text='Приятного аппетита!\n*пицца не пришла*')
+
+
 def handle_delivery(bot, update):
     query = update.callback_query
-
     try:
         data = json.loads(query.data)
     except:
@@ -173,6 +176,7 @@ def handle_delivery(bot, update):
     elif data:
         id_tg = data[0]
         pos = data[1]
+
         bot.send_location(
             chat_id=id_tg,
             longitude=pos[0],
@@ -180,7 +184,8 @@ def handle_delivery(bot, update):
         )
 
 
-def handle_users_reply(bot, update):
+def handle_users_reply(bot, update, job_queue):
+    print(job_queue)
     database = get_database_connection()
     if update.message:
         user_reply = update.message.text
@@ -234,7 +239,7 @@ if __name__ == '__main__':
     dispatcher = updater.dispatcher
     dispatcher.add_handler(CallbackQueryHandler(handle_users_reply))
     dispatcher.add_handler(MessageHandler(Filters.text, handle_users_reply))
-    dispatcher.add_handler(CommandHandler('start', handle_users_reply))
+    dispatcher.add_handler(CommandHandler('start', handle_users_reply, pass_job_queue=True))
     dispatcher.add_handler(MessageHandler(Filters.location, handle_waiting, edited_updates=True))
     dispatcher.add_error_handler(error_callback)
     updater.start_polling()
