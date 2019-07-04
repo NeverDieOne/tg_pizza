@@ -199,5 +199,129 @@ def create_entry(flow_slug, shop):
     return response.json()
 
 
+def get_goods():
+    token = get_authorization_token()
+    url = 'https://api.moltin.com/v2/products'
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+
+    goods = response.json()['data']
+
+    return goods
+
+
+def get_or_create_cart(cart_id):
+    token = get_authorization_token()
+    url = f'https://api.moltin.com/v2/carts/{cart_id}'
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+
+    return response.json()
+
+
+def get_items_in_cart(cart_id):
+    token = get_authorization_token()
+    url = f'https://api.moltin.com/v2/carts/{cart_id}/items'
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    response = requests.get(url, headers, headers=headers)
+    response.raise_for_status()
+
+    return response.json()['data']
+
+
+def add_product_to_cart(cart_id, product_id, product_amount):
+    token = get_authorization_token()
+    url = f'https://api.moltin.com/v2/carts/{cart_id}/items'
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    payload = {
+        'data': {
+            'id': product_id,
+            'type': 'cart_item',
+            'quantity': product_amount
+        }
+    }
+    response = requests.post(url, headers=headers, json=payload)
+    response.raise_for_status()
+
+    return response.json()
+
+
+def get_item_by_id(item_id):
+    token = get_authorization_token()
+    url = f'https://api.moltin.com/v2/products/{item_id}'
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+
+    return response.json()['data']
+
+
+def get_photo_url_by_id(photo_id):
+    token = get_authorization_token()
+    url = f'https://api.moltin.com/v2/files/{photo_id}'
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+
+    return response.json()['data']['link']['href']
+
+
+def delete_item_from_basket(cart_id, item_id):
+    token = get_authorization_token()
+    url = f'https://api.moltin.com/v2/carts/{cart_id}/items/{item_id}'
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    response = requests.delete(url, headers=headers)
+    response.raise_for_status()
+
+    return response.json()
+
+
+def create_customer(first_name, last_name, phone):
+    token = get_authorization_token()
+    url = 'https://api.moltin.com/v2/customers'
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    payload = {
+        'data': {
+            'name': f'{first_name} {last_name}',
+            'type': 'customer',
+            'email': f'{phone}@m.ru',
+        }
+    }
+    response = requests.post(url, headers=headers, json=payload)
+    response.raise_for_status()
+
+    return response.json()['data']['id']
+
+
+def get_customer_by_id(customer_id):
+    token = get_authorization_token()
+    url = f'https://api.moltin.com/v2/customers/{customer_id}'
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+
+    return response.json()
+
+
 if __name__ == '__main__':
     load_dotenv()
