@@ -9,13 +9,11 @@ import moltin
 import utils
 from yandex_geocoder import Client, exceptions
 import json
-from contextlib import suppress
-from pprint import pprint
 
 database = None
 
 
-def start(bot, update):
+def start(bot, update, job_queue):
     moltin.get_or_create_cart(update.message.chat_id)
 
     reply_markup = utils.create_menu_markup()
@@ -24,7 +22,7 @@ def start(bot, update):
     return "HANDLE_MENU"
 
 
-def handle_menu(bot, update):
+def handle_menu(bot, update, job_queue):
     query = update.callback_query
 
     if query.data == 'cart':
@@ -61,7 +59,7 @@ def handle_menu(bot, update):
         return "HANDLE_DESCRIPTION"
 
 
-def handle_description(bot, update):
+def handle_description(bot, update, job_queue):
     query = update.callback_query
     info = query.data.split(', ')
 
@@ -86,7 +84,7 @@ def handle_description(bot, update):
                                    product_amount=1)
 
 
-def handle_cart(bot, update):
+def handle_cart(bot, update, job_queue):
     query = update.callback_query
 
     if query.data == 'menu':
@@ -108,7 +106,7 @@ def handle_cart(bot, update):
         return "HANDLE_CART"
 
 
-def handle_waiting(bot, update):
+def handle_waiting(bot, update, job_queue):
     if update.message.text:
         address = update.message.text
         try:
@@ -165,9 +163,8 @@ def pizza_error(bot, job):
     bot.send_message(chat_id=job.context, text='Приятного аппетита!\n*пицца не пришла*')
 
 
-def handle_delivery(bot, update):
+def handle_delivery(bot, update, job_queue):
     query = update.callback_query
-
     try:
         data = json.loads(query.data)
         id_tg = data[0]
@@ -182,6 +179,8 @@ def handle_delivery(bot, update):
             latitude=pos[1]
         )
 
+        job_queue.run_once(pizza_error, 60 * 60, context=query.message.chat.id)
+
     except json.decoder.JSONDecodeError:
         bot.send_message(
             chat_id=query.message.chat.id,
@@ -189,7 +188,7 @@ def handle_delivery(bot, update):
         )
 
 
-def handle_users_reply(bot, update):
+def handle_users_reply(bot, update, job_queue):
     database = get_database_connection()
     if update.message:
         user_reply = update.message.text
@@ -213,7 +212,7 @@ def handle_users_reply(bot, update):
         'HANDLE_DELIVERY': handle_delivery
     }
     state_handler = states_functions[user_state]
-    next_state = state_handler(bot, update)
+    next_state = state_handler(bot, update, job_queue)
     database.set(chat_id, next_state)
 
 
@@ -238,9 +237,9 @@ if __name__ == '__main__':
     token = os.getenv("TG_TOKEN")
     updater = Updater(token)
     dispatcher = updater.dispatcher
-    dispatcher.add_handler(CallbackQueryHandler(handle_users_reply))
-    dispatcher.add_handler(MessageHandler(Filters.text, handle_users_reply))
-    dispatcher.add_handler(CommandHandler('start', handle_users_reply))
+    dispatcher.add_handler(CallbackQueryHandler(handle_users_reply, pass_job_queue=True))
+    dispatcher.add_handler(MessageHandler(Filters.text, handle_users_reply, pass_job_queue=True))
+    dispatcher.add_handler(CommandHandler('start', handle_users_reply, pass_job_queue=True))
     dispatcher.add_handler(MessageHandler(Filters.location, handle_users_reply, edited_updates=True))
     dispatcher.add_error_handler(error_callback)
     updater.start_polling()
