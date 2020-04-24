@@ -3,7 +3,9 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import math
 from geopy.distance import distance
 import json
-from pprint import pprint
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def show_cart(query, bot, update):
@@ -82,16 +84,18 @@ def get_closest_entry(current_pos, entries):
     for entry in entries:
         _id = entry['id']
         pos = entry['longitude'], entry['latitude']
+        ent_tg = entry['telegram-id']
+        ent_address = entry['address']
 
         _distance = distance(current_pos, pos).km
 
-        result.append({'id': _id, 'distance': _distance})
+        result.append({'id': _id, 'distance': _distance, 'telegram-id': ent_tg, 'address': ent_address})
 
     return min(result, key=min_dist)
 
 
-def create_delivery_menu(suplier, current_pos):
-    data = [suplier, current_pos]
+def create_delivery_menu(suplier, current_pos, cart_id):
+    data = [suplier, current_pos, cart_id]
     data = json.dumps(data)
 
     keyboard = [[InlineKeyboardButton('Доставка', callback_data=f'{data}'),

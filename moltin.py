@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 import datetime
 import requests
 from slugify import slugify
-from pprint import pprint
 
 
 auth_data = None
@@ -145,7 +144,7 @@ def create_flow(name, description):
     response = requests.post(url, headers=headers, json={'data': data})
     response.raise_for_status()
 
-    return response.json()
+    return response.json()['data']['id']
 
 
 def create_field(name, description, flow_id):
@@ -177,6 +176,32 @@ def create_field(name, description, flow_id):
     response.raise_for_status()
 
     return response.json()
+
+
+def create_entry_for_pizzeria_flow(entry_data):
+    token = get_authorization_token()
+    url = f'https://api.moltin.com/v2/flows/pizzeria/entries'
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    data = {
+        'type': 'entry',
+        'address': entry_data['address']['full'],
+        'alias': entry_data['alias'],
+        'longitude': entry_data['coordinates']['lon'],
+        'latitude': entry_data['coordinates']['lat']
+    }
+
+    response = requests.post(url, headers=headers, json={'data': data})
+    response.raise_for_status()
+
+
+def load_pizzerias_to_flow(addresses_file):
+    with open(addresses_file, 'r') as address_file:
+        addresses = json.load(address_file)
+
+    for pizzeria in addresses:
+        create_entry_for_pizzeria_flow(pizzeria)
 
 
 def create_customer_address(pos, cart_id):
@@ -348,7 +373,7 @@ def get_entry(flow_slug, entry_id):
     return response.json()['data']
 
 
-def get_flow():
+def get_flows():
     token = get_authorization_token()
     url = 'https://api.moltin.com/v2/flows'
     headers = {
@@ -362,3 +387,5 @@ def get_flow():
 
 if __name__ == '__main__':
     load_dotenv()
+
+    print(get_flows())

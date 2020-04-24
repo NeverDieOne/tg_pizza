@@ -9,6 +9,8 @@ import moltin
 import utils
 from yandex_geocoder import Client, exceptions
 import json
+from contextlib import suppress
+from pprint import pprint
 
 database = None
 
@@ -108,19 +110,22 @@ def handle_cart(bot, update):
 
 def handle_waiting(bot, update):
     if update.message.text:
+        address = update.message.text
         try:
-            current_pos = Client.coordinates(update.message.text)  # Адрес возвращается (str, str)
-        except exceptions.YandexGeocoderAddressNotFound:
+            client = Client(os.getenv("API_KEY"))
+            lon, lat = client.coordinates(address)
+            current_pos = float(lon), float(lat)
+
+        except exceptions.NothingFound:
             current_pos = None
             bot.send_message(text='Не могу распознать этот адрес',
                              chat_id=update.message.chat_id)
     else:
-        message = None
         if update.edited_message:
             message = update.edited_message
         else:
             message = update.message
-        current_pos = (message.location.longitude, message.location.latitude)  # Адрес возвращается (float, float)
+        current_pos = message.location.longitude, message.location.latitude  # Адрес возвращается (float, float)
 
     if current_pos:
         flow_slug = 'pizzeria'
@@ -129,34 +134,30 @@ def handle_waiting(bot, update):
 
         entries = moltin.get_entries(flow_slug)
         closest_entry = utils.get_closest_entry(current_pos, entries)
-        entry = moltin.get_entry(flow_slug, closest_entry['id'])
-
-        supplier = entry['telegram-id']
-
+        supplier = closest_entry['telegram-id']
         _distance = round(closest_entry["distance"], 1)
+        client_cart_id = update.message['chat']['id']
 
         if closest_entry['distance'] < 0.5:
-            reply = f'Может, заребере пиццу из нашей пиццерии неподалеку? Она всего в {_distance} км от Вас! ' \
-                f'Вот ее адрес: {entry["address"]}\n\nА можем и бесплатно доставить, нам не сложно c:'
-            reply_markup = utils.create_delivery_menu(supplier, current_pos)
+            reply = f'Может, заберете пиццу из нашей пиццерии неподалеку? Она всего в {_distance} км от Вас! ' \
+                f'Вот ее адрес: {closest_entry["address"]}\n\nА можем и бесплатно доставить, нам не сложно c:'
+            reply_markup = utils.create_delivery_menu(supplier, current_pos, client_cart_id)
         elif closest_entry['distance'] < 5:
             reply = f'Похоже, придется ехать до Вас на самокате. ' \
                 f'Доставка будет стоить 100 рублей. Доставляем или самовывоз?'
-            reply_markup = utils.create_delivery_menu(supplier, current_pos)
+            reply_markup = utils.create_delivery_menu(supplier, current_pos, client_cart_id)
         elif closest_entry['distance'] < 20:
             reply = f'А Вы не так близки к нам :c Доставка будет стоить 300 рублей.'
-            reply_markup = utils.create_delivery_menu(supplier, current_pos)
+            reply_markup = utils.create_delivery_menu(supplier, current_pos, client_cart_id)
         else:
             reply = f'Простите, но так далеко пиццу не доставим. Ближайшая пиццерия аж в {_distance} км от Вас!'
             reply_markup = None
             bot.send_message(text=reply,
                              chat_id=update.message.chat_id)
-
         if reply_markup:
             bot.send_message(text=reply,
                              chat_id=update.message.chat_id,
                              reply_markup=reply_markup)
-
             return "HANDLE_DELIVERY"
 
 
@@ -166,26 +167,29 @@ def pizza_error(bot, job):
 
 def handle_delivery(bot, update):
     query = update.callback_query
+
     try:
         data = json.loads(query.data)
-    except:
-        pass
-
-    if query.data == 'pickup':
-        print('pickup')
-    elif data:
         id_tg = data[0]
         pos = data[1]
-
+        bot.send_message(
+            chat_id=id_tg,
+            text=f'Заказ под номером {query.message.chat.id} ожидает доставку :3'
+        )
         bot.send_location(
             chat_id=id_tg,
             longitude=pos[0],
             latitude=pos[1]
         )
 
+    except json.decoder.JSONDecodeError:
+        bot.send_message(
+            chat_id=query.message.chat.id,
+            text='Вы выбрали самовывоз. Заказ будет готов в течении 45 минут =) Ждем вас =)'
+        )
 
-def handle_users_reply(bot, update, job_queue):
-    print(job_queue)
+
+def handle_users_reply(bot, update):
     database = get_database_connection()
     if update.message:
         user_reply = update.message.text
@@ -216,10 +220,7 @@ def handle_users_reply(bot, update, job_queue):
 def get_database_connection():
     global database
     if database is None:
-        database_password = os.getenv("DATABASE_PASSWORD")
-        database_host = os.getenv("DATABASE_HOST")
-        database_port = os.getenv("DATABASE_PORT")
-        database = redis.Redis(host=database_host, port=database_port, password=database_password)
+        database = redis.Redis(host='localhost', port=6379, db=1)
     return database
 
 
@@ -239,7 +240,7 @@ if __name__ == '__main__':
     dispatcher = updater.dispatcher
     dispatcher.add_handler(CallbackQueryHandler(handle_users_reply))
     dispatcher.add_handler(MessageHandler(Filters.text, handle_users_reply))
-    dispatcher.add_handler(CommandHandler('start', handle_users_reply, pass_job_queue=True))
-    dispatcher.add_handler(MessageHandler(Filters.location, handle_waiting, edited_updates=True))
+    dispatcher.add_handler(CommandHandler('start', handle_users_reply))
+    dispatcher.add_handler(MessageHandler(Filters.location, handle_users_reply, edited_updates=True))
     dispatcher.add_error_handler(error_callback)
     updater.start_polling()
