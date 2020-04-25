@@ -26,7 +26,7 @@ def show_cart(query, bot, update):
 
     keyboard = [[InlineKeyboardButton(f"Удалить товар {good['name']}", callback_data=good['id'])] for good in goods]
     keyboard.append([InlineKeyboardButton('В меню', callback_data='menu')])
-    keyboard.append([InlineKeyboardButton('Оплатить', callback_data='payment')])
+    keyboard.append([InlineKeyboardButton('Оплатить', callback_data=f'payment, {total}')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     bot.send_message(text=reply,

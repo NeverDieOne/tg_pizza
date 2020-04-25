@@ -1,7 +1,7 @@
 import os
 import logging
 import redis
-from telegram.ext import Filters, Updater
+from telegram.ext import Filters, Updater, PreCheckoutQueryHandler
 from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from dotenv import load_dotenv
@@ -9,6 +9,7 @@ import moltin
 import utils
 from yandex_geocoder import Client, exceptions
 import json
+import payment
 
 database = None
 
@@ -87,6 +88,8 @@ def handle_description(bot, update, job_queue):
 def handle_cart(bot, update, job_queue):
     query = update.callback_query
 
+    payment_and_price = query.data.split(', ')
+
     if query.data == 'menu':
         reply_markup = utils.create_menu_markup()
 
@@ -95,10 +98,9 @@ def handle_cart(bot, update, job_queue):
                               message_id=query.message.message_id,
                               reply_markup=reply_markup)
         return "HANDLE_MENU"
-    elif query.data == 'payment':
-        bot.edit_message_text(text='Пришлите нам Ваш адрес текстом или геолокацию.',
-                              chat_id=query.message.chat_id,
-                              message_id=query.message.message_id)
+    elif payment_and_price[0] == 'payment':
+        price = int(payment_and_price[1])
+        payment.start_without_shipping(bot, update, price)
         return "HANDLE_WAITING"
     else:
         moltin.delete_item_from_basket(query.message.chat_id, query.data)
@@ -241,5 +243,7 @@ if __name__ == '__main__':
     dispatcher.add_handler(MessageHandler(Filters.text, handle_users_reply, pass_job_queue=True))
     dispatcher.add_handler(CommandHandler('start', handle_users_reply, pass_job_queue=True))
     dispatcher.add_handler(MessageHandler(Filters.location, handle_users_reply, edited_updates=True))
+    dispatcher.add_handler(PreCheckoutQueryHandler(payment.precheckout_callback))
+    dispatcher.add_handler(MessageHandler(Filters.successful_payment, payment.successful_payment_callback))
     dispatcher.add_error_handler(error_callback)
     updater.start_polling()
