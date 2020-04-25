@@ -221,7 +221,11 @@ def handle_users_reply(bot, update, job_queue):
 def get_database_connection():
     global database
     if database is None:
-        database = redis.Redis(host='localhost', port=6379, db=1)
+        database = redis.Redis(
+            host=os.getenv('DATABASE_HOST'),
+            port=os.getenv('DATABASE_PORT'),
+            db=os.getenv('DATABASE_NUMBER')
+        )
     return database
 
 
