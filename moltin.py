@@ -43,7 +43,7 @@ def is_token_valid(auth_data):
     now = datetime.datetime.now()
     token_expires = datetime.datetime.fromtimestamp(auth_data[0])
 
-    return now < token_expires
+    return now + datetime.timedelta(seconds=30) < token_expires  # 30 секунд форы
 
 
 def create_product(product):
