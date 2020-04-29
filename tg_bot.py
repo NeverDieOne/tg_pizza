@@ -62,9 +62,9 @@ def handle_menu(bot, update, job_queue):
 
 def handle_description(bot, update, job_queue):
     query = update.callback_query
-    info = query.data.split(', ')
+    command, product_id = query.data.split(', ')
 
-    if info[0] == 'back':
+    if command == 'back':
         reply_markup = utils.create_menu_markup()
 
         #  Если здесь использовать edit_message_text, то будет ошибка: 'NoneType' object has no attribute 'reply_text'
@@ -76,12 +76,12 @@ def handle_description(bot, update, job_queue):
                            message_id=query.message.message_id)
         return "HANDLE_MENU"
 
-    elif info[0] == 'cart':
+    elif command == 'cart':
         utils.show_cart(query, bot, update)
         return "HANDLE_CART"
-    elif info[0] == 'add':
+    elif command == 'add':
         moltin.add_product_to_cart(cart_id=query.message.chat_id,
-                                   product_id=info[1],
+                                   product_id=product_id,
                                    product_amount=1)
 
 
@@ -168,17 +168,15 @@ def pizza_error(bot, job):
 def handle_delivery(bot, update, job_queue):
     query = update.callback_query
     try:
-        data = json.loads(query.data)
-        id_tg = data[0]
-        pos = data[1]
+        id_tg, (lon, lat) = json.loads(query.data)
         bot.send_message(
             chat_id=id_tg,
             text=f'Заказ под номером {query.message.chat.id} ожидает доставку :3'
         )
         bot.send_location(
             chat_id=id_tg,
-            longitude=pos[0],
-            latitude=pos[1]
+            longitude=lon,
+            latitude=lat
         )
 
         job_queue.run_once(pizza_error, 60 * 60, context=query.message.chat.id)

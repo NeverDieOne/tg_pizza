@@ -6,19 +6,16 @@ import requests
 from slugify import slugify
 
 
-auth_data = None
-token = None
+token_expire, token = None, None
 
 
 def get_authorization_token():
     global token
-    global auth_data
+    global token_expire
 
-    if token and is_token_valid(auth_data):
-        token = auth_data[1]
-    else:
-        auth_data = get_authorization_data()
-        token = auth_data[1]
+    if not token or not is_token_valid(token_expire):
+        token_expire, token = get_authorization_data()
+
     return token
 
 
@@ -36,9 +33,9 @@ def get_authorization_data():
     return response_json['expires'], response_json['access_token']
 
 
-def is_token_valid(auth_data):
+def is_token_valid(token_expire):
     now = datetime.datetime.now()
-    token_expires = datetime.datetime.fromtimestamp(auth_data[0])
+    token_expires = datetime.datetime.fromtimestamp(token_expire)
 
     return now + datetime.timedelta(seconds=30) < token_expires  # 30 секунд форы
 
