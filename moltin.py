@@ -13,15 +13,12 @@ token = None
 def get_authorization_token():
     global token
     global auth_data
-    if token is None:
-        auth_data = get_authorization_data()
+
+    if token and is_token_valid(auth_data):
         token = auth_data[1]
     else:
-        if is_token_valid(auth_data):
-            token = auth_data[1]
-        else:
-            auth_data = get_authorization_data()
-            token = auth_data[1]
+        auth_data = get_authorization_data()
+        token = auth_data[1]
     return token
 
 
@@ -387,5 +384,3 @@ def get_flows():
 
 if __name__ == '__main__':
     load_dotenv()
-
-    print(get_flows())
