@@ -222,7 +222,7 @@ def create_customer_address(pos, cart_id):
     return response.json()
 
 
-def get_goods():
+def get_products():
     token = get_authorization_token()
     url = 'https://api.moltin.com/v2/products'
     headers = {
@@ -249,7 +249,7 @@ def get_or_create_cart(cart_id):
     return response.json()
 
 
-def get_items_in_cart(cart_id):
+def get_products_in_cart(cart_id):
     token = get_authorization_token()
     url = f'https://api.moltin.com/v2/carts/{cart_id}/items'
     headers = {
@@ -282,9 +282,9 @@ def add_product_to_cart(cart_id, product_id, product_amount):
     return response.json()
 
 
-def get_item_by_id(item_id):
+def get_product_by_id(product_id):
     token = get_authorization_token()
-    url = f'https://api.moltin.com/v2/products/{item_id}'
+    url = f'https://api.moltin.com/v2/products/{product_id}'
     headers = {
         'Authorization': f'Bearer {token}'
     }
@@ -306,9 +306,9 @@ def get_photo_url_by_id(photo_id):
     return response.json()['data']['link']['href']
 
 
-def delete_item_from_basket(cart_id, item_id):
+def delete_product_from_basket(cart_id, product_id):
     token = get_authorization_token()
-    url = f'https://api.moltin.com/v2/carts/{cart_id}/items/{item_id}'
+    url = f'https://api.moltin.com/v2/carts/{cart_id}/items/{product_id}'
     headers = {
         'Authorization': f'Bearer {token}'
     }

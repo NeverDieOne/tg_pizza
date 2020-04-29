@@ -9,7 +9,7 @@ load_dotenv()
 
 
 def show_cart(query, bot, update):
-    goods = moltin.get_items_in_cart(query.message.chat_id)
+    goods = moltin.get_products_in_cart(query.message.chat_id)
 
     list_reply = []
     total = sum([good['meta']['display_price']['with_tax']['value']['amount'] for good in goods])
@@ -37,30 +37,30 @@ def show_cart(query, bot, update):
 
 
 def get_pagination(per_page):
-    goods = moltin.get_goods()
+    products = moltin.get_products()
 
-    items_per_page = per_page
-    max_page = math.ceil(len(goods) / items_per_page)
+    products_per_page = per_page
+    max_page = math.ceil(len(products) / products_per_page)
 
     start = 0
-    end = items_per_page
+    end = products_per_page
 
     paginated_goods = []
 
     for _ in range(max_page):
-        paginated_goods.append(goods[start: end])
+        paginated_goods.append(products[start: end])
         start = end
-        end += items_per_page
+        end += products_per_page
 
     return paginated_goods
 
 
 def create_menu_markup(page=0):
-    goods_per_page = 8
-    goods = get_pagination(goods_per_page)
-    keyboard = [[InlineKeyboardButton(good['name'], callback_data=good['id'])] for good in goods[page]]
+    products_per_page = 8
+    products = get_pagination(products_per_page)
+    keyboard = [[InlineKeyboardButton(product['name'], callback_data=product['id'])] for product in products[page]]
 
-    if page == len(goods) - 1:
+    if page == len(products) - 1:
         keyboard.append([InlineKeyboardButton('Назад', callback_data=f'pag, {page - 1}')])
     elif page == 0:
         keyboard.append([InlineKeyboardButton('Вперед', callback_data=f'pag, {page + 1}')])

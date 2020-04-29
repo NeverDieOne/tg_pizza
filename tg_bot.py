@@ -43,7 +43,7 @@ def handle_menu(bot, update, job_queue):
                     [InlineKeyboardButton('Корзина', callback_data='cart')]]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        good_info = moltin.get_item_by_id(query.data)
+        good_info = moltin.get_product_by_id(query.data)
         good_photo_id = good_info['relationships']['main_image']['data']['id']
         good_photo = moltin.get_photo_url_by_id(good_photo_id)
 
@@ -103,7 +103,7 @@ def handle_cart(bot, update, job_queue):
         payment.start_without_shipping(bot, update, price)
         return "HANDLE_WAITING"
     else:
-        moltin.delete_item_from_basket(query.message.chat_id, query.data)
+        moltin.delete_product_from_basket(query.message.chat_id, query.data)
         utils.show_cart(query, bot, update)
         return "HANDLE_CART"
 
