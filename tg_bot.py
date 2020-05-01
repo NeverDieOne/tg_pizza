@@ -43,16 +43,16 @@ def handle_menu(bot, update, job_queue):
                     [InlineKeyboardButton('Корзина', callback_data='cart')]]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        good_info = moltin.get_product_by_id(query.data)
-        good_photo_id = good_info['relationships']['main_image']['data']['id']
-        good_photo = moltin.get_photo_url_by_id(good_photo_id)
+        product_info = moltin.get_product_by_id(query.data)
+        prodcut_photo_id = product_info['relationships']['main_image']['data']['id']
+        product_photo = moltin.get_photo_url_by_id(prodcut_photo_id)
 
-        name = good_info['name']
-        description = good_info['description']
-        price = good_info['price'][0]['amount']
+        name = product_info['name']
+        description = product_info['description']
+        price = product_info['price'][0]['amount']
 
         bot.send_photo(chat_id=query.message.chat_id,
-                       photo=good_photo,
+                       photo=product_photo,
                        caption=f"{name}\nСтоимость: {price} руб.\n\n{description}",
                        reply_markup=reply_markup)
         bot.delete_message(chat_id=query.message.chat_id,
