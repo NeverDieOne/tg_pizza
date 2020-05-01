@@ -94,8 +94,8 @@ def get_closest_entry(current_pos, entries):
     return min(result, key=min_dist)
 
 
-def create_delivery_menu(suplier, current_pos, cart_id):
-    data = [suplier, current_pos, cart_id]
+def create_delivery_menu(suplier, current_pos):
+    data = [suplier, current_pos]
     data = json.dumps(data)
 
     keyboard = [[InlineKeyboardButton('Доставка', callback_data=f'{data}'),

@@ -117,9 +117,9 @@ def handle_waiting(bot, update, job_queue):
             current_pos = float(lon), float(lat)
 
         except exceptions.NothingFound:
-            current_pos = None
             bot.send_message(text='Не могу распознать этот адрес',
                              chat_id=update.message.chat_id)
+            return "HANDLE_WAITING"
     else:
         if update.edited_message:
             message = update.edited_message
@@ -131,24 +131,22 @@ def handle_waiting(bot, update, job_queue):
         flow_slug = 'pizzeria'
 
         moltin.create_customer_address(current_pos, update.message.chat_id)
-
         entries = moltin.get_entries(flow_slug)
         closest_entry = utils.get_closest_entry(current_pos, entries)
         supplier = closest_entry['telegram-id']
         _distance = round(closest_entry["distance"], 1)
-        client_cart_id = update.message['chat']['id']
 
         if closest_entry['distance'] < 0.5:
             reply = f'Может, заберете пиццу из нашей пиццерии неподалеку? Она всего в {_distance} км от Вас! ' \
                 f'Вот ее адрес: {closest_entry["address"]}\n\nА можем и бесплатно доставить, нам не сложно c:'
-            reply_markup = utils.create_delivery_menu(supplier, current_pos, client_cart_id)
+            reply_markup = utils.create_delivery_menu(supplier, current_pos)
         elif closest_entry['distance'] < 5:
             reply = f'Похоже, придется ехать до Вас на самокате. ' \
                 f'Доставка будет стоить 100 рублей. Доставляем или самовывоз?'
-            reply_markup = utils.create_delivery_menu(supplier, current_pos, client_cart_id)
+            reply_markup = utils.create_delivery_menu(supplier, current_pos)
         elif closest_entry['distance'] < 20:
             reply = f'А Вы не так близки к нам :c Доставка будет стоить 300 рублей.'
-            reply_markup = utils.create_delivery_menu(supplier, current_pos, client_cart_id)
+            reply_markup = utils.create_delivery_menu(supplier, current_pos)
         else:
             reply = f'Простите, но так далеко пиццу не доставим. Ближайшая пиццерия аж в {_distance} км от Вас!'
             reply_markup = None
@@ -167,7 +165,14 @@ def pizza_error(bot, job):
 
 def handle_delivery(bot, update, job_queue):
     query = update.callback_query
-    try:
+    print(type(query.data))
+
+    if query.data == 'pickup':
+        bot.send_message(
+            chat_id=query.message.chat.id,
+            text='Вы выбрали самовывоз. Заказ будет готов в течении 45 минут =) Ждем вас =)'
+        )
+    else:
         id_tg, (lon, lat) = json.loads(query.data)
         bot.send_message(
             chat_id=id_tg,
@@ -180,12 +185,6 @@ def handle_delivery(bot, update, job_queue):
         )
 
         job_queue.run_once(pizza_error, 60 * 60, context=query.message.chat.id)
-
-    except json.decoder.JSONDecodeError:
-        bot.send_message(
-            chat_id=query.message.chat.id,
-            text='Вы выбрали самовывоз. Заказ будет готов в течении 45 минут =) Ждем вас =)'
-        )
 
 
 def handle_users_reply(bot, update, job_queue):
