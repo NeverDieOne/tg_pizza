@@ -103,3 +103,23 @@ def create_delivery_menu(suplier, current_pos):
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     return reply_markup
+
+
+def generate_facebook_menu() -> list:
+    products = moltin.get_products()
+    elements = []
+
+    for product in products:
+        product_name = product["name"]
+        product_description = product["description"]
+        product_price = product["price"][0]["amount"]
+
+        elements.append({
+            "title": product_name,
+            "subtitle": product_description,
+            "buttons": [
+                {"type": "postback", "title": "Добавить в корзину", "payload": product_price},
+            ]
+        })
+
+    return elements[:5]

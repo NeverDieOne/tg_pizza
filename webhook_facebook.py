@@ -2,11 +2,13 @@ import os
 from dotenv import load_dotenv
 import requests
 from flask import Flask, request
+from utils import generate_facebook_menu
 
 load_dotenv()
 
 app = Flask(__name__)
 FACEBOOK_TOKEN = os.environ["PAGE_ACCESS_TOKEN"]
+
 
 @app.route('/', methods=['GET'])
 def verify():
@@ -34,11 +36,11 @@ def webhook():
                     sender_id = messaging_event["sender"]["id"]
                     recipient_id = messaging_event["recipient"]["id"]
                     message_text = messaging_event["message"]["text"]
-                    send_message(sender_id, message_text)
+                    send_message(sender_id)
     return "ok", 200
 
 
-def send_message(recipient_id, message_text):
+def send_message(recipient_id):
     params = {"access_token": FACEBOOK_TOKEN}
     headers = {"Content-Type": "application/json"}
     request_content = {
@@ -46,7 +48,13 @@ def send_message(recipient_id, message_text):
             "id": recipient_id
         },
         "message": {
-            "text": message_text
+            "attachment": {
+                "type": "template",
+                "payload": {
+                    "template_type": "generic",
+                    "elements": generate_facebook_menu(),
+                }
+            }
         }
     }
     response = requests.post(
@@ -54,6 +62,7 @@ def send_message(recipient_id, message_text):
         params=params, headers=headers, json=request_content
     )
     response.raise_for_status()
+
 
 if __name__ == '__main__':
     app.run(debug=True)
