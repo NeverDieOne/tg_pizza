@@ -4,7 +4,15 @@ from dotenv import load_dotenv
 import datetime
 import requests
 from slugify import slugify
+from pprint import pprint
 
+
+CATEGORIES = {
+    'hot': '0cd20248-9e23-4304-9c38-04f547276001',  # острые
+    'prime': '409e5b44-7e45-426b-bf26-7d1d14f8a6a5',  # основные
+    'hearty': 'c1af2f67-634f-4b46-b790-8e3ae5dcbae7',  # сытные
+    'special': '32002b43-1136-4b6d-9f6d-f77bf424ac1a'  # особые
+}
 
 token_expire, token = None, None
 
@@ -379,5 +387,33 @@ def get_flows():
     return respone.json()['data']
 
 
+def get_all_categories():
+    token = get_authorization_token()
+    url = 'https://api.moltin.com/v2/categories'
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    respone = requests.get(url, headers=headers)
+    respone.raise_for_status()
+
+    return respone.json()['data']
+
+
+def get_products_by_category_id(category_id):
+    token = get_authorization_token()
+    url = 'https://api.moltin.com/v2/products'
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    params = {
+        'filter': f'eq(category.id,{category_id})'
+    }
+    respone = requests.get(url, headers=headers, params=params)
+    respone.raise_for_status()
+
+    return respone.json()['data']
+
+
 if __name__ == '__main__':
     load_dotenv()
+    pprint(get_products_by_category_id())
