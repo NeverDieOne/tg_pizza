@@ -105,6 +105,17 @@ def create_delivery_menu(suplier, current_pos):
     return reply_markup
 
 
+def genearage_facebook_main():
+    return {'title': 'Меню',
+            'subtitle': 'Здесь вы можете выбрать один из вариантов',
+            'image_url': 'https://image.freepik.com/free-vector/_15146-192.jpg',
+            'buttons': [
+                {'type': 'postback', 'title': 'Корзина', 'payload': 'cart'},
+                {'type': 'postback', 'title': 'Акции', 'payload': 'stocks'},
+                {'type': 'postback', 'title': 'Сделать заказ', 'payload': 'order'},
+            ]}
+
+
 def generate_facebook_menu() -> list:
     products = moltin.get_products()
     elements = []
@@ -114,9 +125,13 @@ def generate_facebook_menu() -> list:
         product_description = product["description"]
         product_price = product["price"][0]["amount"]
 
+        photo_id = product["relationships"]["main_image"]["data"]["id"]
+        product_photo_url = moltin.get_photo_url_by_id(photo_id)
+
         elements.append({
-            "title": product_name,
+            "title": f'{product_name} ({product_price} руб.)',
             "subtitle": product_description,
+            "image_url": product_photo_url,
             "buttons": [
                 {"type": "postback", "title": "Добавить в корзину", "payload": product_price},
             ]
