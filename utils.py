@@ -146,7 +146,7 @@ def generate_facebook_categories_cart():
             'subtitle': 'Остальные пиццы можно посмотреть в одной из категорий',
             'image_url': 'https://primepizza.ru/uploads/position/large_0c07c6fd5c4dcadddaf4a2f1a2c218760b20c396.jpg',
             'buttons': [
-                {'type': 'postback', 'title': 'Острые', 'payload': 'hot'},
-                {'type': 'postback', 'title': 'Сытные', 'payload': 'hearty'},
-                {'type': 'postback', 'title': 'Особые', 'payload': 'special'},
+                {'type': 'postback', 'title': 'Острые', 'payload': '0cd20248-9e23-4304-9c38-04f547276001'},
+                {'type': 'postback', 'title': 'Сытные', 'payload': 'c1af2f67-634f-4b46-b790-8e3ae5dcbae7'},
+                {'type': 'postback', 'title': 'Особые', 'payload': '32002b43-1136-4b6d-9f6d-f77bf424ac1a'},
             ]}

@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import requests
 from flask import Flask, request
 from utils import generate_facebook_menu, genearage_facebook_main_cart, generate_facebook_categories_cart
-from moltin import get_products_by_category_id, CATEGORIES
+from moltin import get_products_by_category_id
 import redis
 
 load_dotenv()
@@ -38,14 +38,20 @@ def webhook():
             for messaging_event in entry["messaging"]:
                 if messaging_event.get("message"):
                     sender_id = messaging_event["sender"]["id"]
-                    recipient_id = messaging_event["recipient"]["id"]
                     message_text = messaging_event["message"]["text"]
+                    handle_users_reply(sender_id, message_text=message_text)
+                if messaging_event.get('postback'):
+                    sender_id = messaging_event["sender"]["id"]
+                    postback_payload = messaging_event["postback"]["payload"]
+                    handle_users_reply(sender_id, postback_payload=postback_payload)
 
-                    handle_users_reply(sender_id, message_text)
     return "ok", 200
 
 
-def handle_start(sender_id, message_text):
+def handle_start(sender_id, message_text=None, postback_payload=None):
+    if not postback_payload:
+        postback_payload = '409e5b44-7e45-426b-bf26-7d1d14f8a6a5'
+
     params = {"access_token": FACEBOOK_TOKEN}
     headers = {"Content-Type": "application/json"}
     request_content = {
@@ -59,7 +65,7 @@ def handle_start(sender_id, message_text):
                     "template_type": "generic",
                     "elements": [
                         genearage_facebook_main_cart(),
-                        *generate_facebook_menu(get_products_by_category_id(CATEGORIES['prime'])),
+                        *generate_facebook_menu(get_products_by_category_id(postback_payload)),
                         generate_facebook_categories_cart()]
                 }
             }
@@ -73,7 +79,7 @@ def handle_start(sender_id, message_text):
     return "START"
 
 
-def handle_users_reply(sender_id, message_text):
+def handle_users_reply(sender_id, message_text=None, postback_payload=None):
     database = get_database_connection()
     states_functions = {
         'START': handle_start,
@@ -86,7 +92,7 @@ def handle_users_reply(sender_id, message_text):
     if message_text == "/start":
         user_state = "START"
     state_handler = states_functions[user_state]
-    next_state = state_handler(sender_id, message_text)
+    next_state = state_handler(sender_id, message_text, postback_payload)
     database.set(f'facebookid_{sender_id}', next_state)
 
 

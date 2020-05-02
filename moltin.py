@@ -7,13 +7,6 @@ from slugify import slugify
 from pprint import pprint
 
 
-CATEGORIES = {
-    'hot': '0cd20248-9e23-4304-9c38-04f547276001',  # острые
-    'prime': '409e5b44-7e45-426b-bf26-7d1d14f8a6a5',  # основные
-    'hearty': 'c1af2f67-634f-4b46-b790-8e3ae5dcbae7',  # сытные
-    'special': '32002b43-1136-4b6d-9f6d-f77bf424ac1a'  # особые
-}
-
 token_expire, token = None, None
 
 
@@ -416,4 +409,3 @@ def get_products_by_category_id(category_id):
 
 if __name__ == '__main__':
     load_dotenv()
-    pprint(get_products_by_category_id())
