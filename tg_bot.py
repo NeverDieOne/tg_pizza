@@ -197,7 +197,7 @@ def handle_users_reply(bot, update, job_queue):
     if user_reply == '/start':
         user_state = 'START'
     else:
-        user_state = database.get(chat_id).decode("utf-8")
+        user_state = database.get(f'telegramid_{chat_id}').decode("utf-8")
 
     states_functions = {
         'START': start,
@@ -209,7 +209,7 @@ def handle_users_reply(bot, update, job_queue):
     }
     state_handler = states_functions[user_state]
     next_state = state_handler(bot, update, job_queue)
-    database.set(chat_id, next_state)
+    database.set(f'telegramid_{chat_id}', next_state)
 
 
 def get_database_connection():

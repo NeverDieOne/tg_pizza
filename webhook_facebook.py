@@ -4,11 +4,14 @@ import requests
 from flask import Flask, request
 from utils import generate_facebook_menu, genearage_facebook_main_cart, generate_facebook_categories_cart
 from moltin import get_products_by_category_id, CATEGORIES
+import redis
 
 load_dotenv()
 
 app = Flask(__name__)
 FACEBOOK_TOKEN = os.environ["PAGE_ACCESS_TOKEN"]
+
+database = None
 
 
 @app.route('/', methods=['GET'])
@@ -37,16 +40,17 @@ def webhook():
                     sender_id = messaging_event["sender"]["id"]
                     recipient_id = messaging_event["recipient"]["id"]
                     message_text = messaging_event["message"]["text"]
-                    send_message(sender_id)
+
+                    handle_users_reply(sender_id, message_text)
     return "ok", 200
 
 
-def send_message(recipient_id):
+def handle_start(sender_id, message_text):
     params = {"access_token": FACEBOOK_TOKEN}
     headers = {"Content-Type": "application/json"}
     request_content = {
         "recipient": {
-            "id": recipient_id
+            "id": sender_id
         },
         "message": {
             "attachment": {
@@ -66,6 +70,35 @@ def send_message(recipient_id):
         params=params, headers=headers, json=request_content
     )
     response.raise_for_status()
+    return "START"
+
+
+def handle_users_reply(sender_id, message_text):
+    database = get_database_connection()
+    states_functions = {
+        'START': handle_start,
+    }
+    recorded_state = database.get(f'facebookid_{sender_id}')
+    if not recorded_state or recorded_state.decode("utf-8") not in states_functions.keys():
+        user_state = "START"
+    else:
+        user_state = recorded_state.decode("utf-8")
+    if message_text == "/start":
+        user_state = "START"
+    state_handler = states_functions[user_state]
+    next_state = state_handler(sender_id, message_text)
+    database.set(f'facebookid_{sender_id}', next_state)
+
+
+def get_database_connection():
+    global database
+    if database is None:
+        database = redis.Redis(
+            host=os.getenv('DATABASE_HOST'),
+            port=os.getenv('DATABASE_PORT'),
+            db=os.getenv('DATABASE_NUMBER')
+        )
+    return database
 
 
 if __name__ == '__main__':
