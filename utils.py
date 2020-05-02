@@ -105,7 +105,7 @@ def create_delivery_menu(suplier, current_pos):
     return reply_markup
 
 
-def genearage_facebook_main():
+def genearage_facebook_main_cart():
     return {'title': 'Меню',
             'subtitle': 'Здесь вы можете выбрать один из вариантов',
             'image_url': 'https://image.freepik.com/free-vector/_15146-192.jpg',
@@ -138,4 +138,15 @@ def generate_facebook_menu(products_list=None) -> list:
             ]
         })
 
-    return prodcuts[:5]
+    return prodcuts
+
+
+def generate_facebook_categories_cart():
+    return {'title': 'Не нашли нужную пиццу?',
+            'subtitle': 'Остальные пиццы можно посмотреть в одной из категорий',
+            'image_url': 'https://primepizza.ru/uploads/position/large_0c07c6fd5c4dcadddaf4a2f1a2c218760b20c396.jpg',
+            'buttons': [
+                {'type': 'postback', 'title': 'Острые', 'payload': 'hot'},
+                {'type': 'postback', 'title': 'Сытные', 'payload': 'hearty'},
+                {'type': 'postback', 'title': 'Особые', 'payload': 'special'},
+            ]}

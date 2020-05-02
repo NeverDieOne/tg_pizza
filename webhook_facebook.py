@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 import requests
 from flask import Flask, request
-from utils import generate_facebook_menu, genearage_facebook_main
+from utils import generate_facebook_menu, genearage_facebook_main_cart, generate_facebook_categories_cart
 from moltin import get_products_by_category_id, CATEGORIES
 
 load_dotenv()
@@ -54,8 +54,9 @@ def send_message(recipient_id):
                 "payload": {
                     "template_type": "generic",
                     "elements": [
-                        genearage_facebook_main(),
-                        *generate_facebook_menu(get_products_by_category_id(CATEGORIES['prime']))]
+                        genearage_facebook_main_cart(),
+                        *generate_facebook_menu(get_products_by_category_id(CATEGORIES['prime'])),
+                        generate_facebook_categories_cart()]
                 }
             }
         }
