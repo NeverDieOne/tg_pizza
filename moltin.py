@@ -6,6 +6,7 @@ import requests
 from slugify import slugify
 from pprint import pprint
 
+from tg_bot import get_database_connection
 
 token_expire, token = None, None
 
@@ -393,21 +394,11 @@ def get_all_categories():
 
 
 def get_products_by_category_id(category_id):
-    token = get_authorization_token()
-    url = 'https://api.moltin.com/v2/products'
-    headers = {
-        'Authorization': f'Bearer {token}'
-    }
-    params = {
-        'filter': f'eq(category.id,{category_id})'
-    }
-    respone = requests.get(url, headers=headers, params=params)
-    respone.raise_for_status()
-
-    return respone.json()['data']
+    database = get_database_connection()
+    json_menu = database.get(f'menu_{category_id}')
+    menu = json.loads(json_menu)
+    return menu
 
 
 if __name__ == '__main__':
     load_dotenv()
-
-    print(get_authorization_token())
