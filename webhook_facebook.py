@@ -2,8 +2,9 @@ import os
 from dotenv import load_dotenv
 import requests
 from flask import Flask, request
-from utils import generate_facebook_menu, genearage_facebook_main_cart, generate_facebook_categories_cart
-from moltin import get_products_by_category_id
+from utils import generate_facebook_menu, genearage_facebook_main_cart, generate_facebook_categories_cart, \
+    send_facebook_message, generage_facebook_cart
+from moltin import get_products_by_category_id, add_product_to_cart, get_products_in_cart
 import redis
 
 load_dotenv()
@@ -52,37 +53,64 @@ def handle_start(sender_id, message_text=None, postback_payload=None):
     if not postback_payload:
         postback_payload = '409e5b44-7e45-426b-bf26-7d1d14f8a6a5'
 
-    params = {"access_token": FACEBOOK_TOKEN}
-    headers = {"Content-Type": "application/json"}
-    request_content = {
-        "recipient": {
-            "id": sender_id
-        },
-        "message": {
-            "attachment": {
-                "type": "template",
-                "payload": {
-                    "template_type": "generic",
-                    "elements": [
-                        genearage_facebook_main_cart(),
-                        *generate_facebook_menu(get_products_by_category_id(postback_payload)),
-                        generate_facebook_categories_cart()]
-                }
+    if 'add' in postback_payload or 'cart' in postback_payload:
+        return "MENU"
+
+    message = {
+        "attachment": {
+            "type": "template",
+            "payload": {
+                "template_type": "generic",
+                "elements": [
+                    genearage_facebook_main_cart(),
+                    *generate_facebook_menu(get_products_by_category_id(postback_payload)),
+                    generate_facebook_categories_cart()]
             }
         }
     }
-    response = requests.post(
-        "https://graph.facebook.com/v2.6/me/messages",
-        params=params, headers=headers, json=request_content
-    )
-    response.raise_for_status()
+
+    send_facebook_message(FACEBOOK_TOKEN, sender_id, message)
     return "START"
+
+
+def handle_menu(sender_id, message_text=None, postback_payload=None):
+    if 'add' in postback_payload:
+        product_id = postback_payload.split(', ')[-1]
+        add_product_to_cart(cart_id=sender_id, product_id=product_id, product_amount=1)
+
+        message = {
+            'text': 'Товар успешно добавлен в корзину'
+        }
+
+        send_facebook_message(FACEBOOK_TOKEN, sender_id, message)
+
+        return "MENU"
+
+    if 'cart' in postback_payload:
+        products = get_products_in_cart(sender_id)
+
+        message = {
+            'attachment': {
+                'type': 'template',
+                'payload': {
+                    'template_type': 'generic',
+                    'elements': [
+                        *generage_facebook_cart(products)
+                    ]
+                }
+            }
+        }
+
+        send_facebook_message(FACEBOOK_TOKEN, sender_id, message)
+
+        return "MENU"
 
 
 def handle_users_reply(sender_id, message_text=None, postback_payload=None):
     database = get_database_connection()
     states_functions = {
         'START': handle_start,
+        'MENU': handle_menu
     }
     recorded_state = database.get(f'facebookid_{sender_id}')
     if not recorded_state or recorded_state.decode("utf-8") not in states_functions.keys():
