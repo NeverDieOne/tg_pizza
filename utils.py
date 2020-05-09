@@ -185,7 +185,8 @@ def generage_facebook_cart(products_list):
     }]
 
     for product in products_list:
-        product_id = product['id']
+        product_id = product['product_id']
+        delete_id = product['id']
         product_name = product['name']
         product_description = product['description']
         numbers = product['quantity']
@@ -198,7 +199,7 @@ def generage_facebook_cart(products_list):
             "image_url": photo_url,
             "buttons": [
                 {"type": "postback", "title": "Добавить еще одну", "payload": f"add, {product_id}"},
-                {"type": "postback", "title": "Удалить из корзины", "payload": f"delete, {product_id}"},
+                {"type": "postback", "title": "Удалить из корзины", "payload": f"delete, {delete_id}"},
             ]
         })
 

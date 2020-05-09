@@ -409,3 +409,5 @@ def get_products_by_category_id(category_id):
 
 if __name__ == '__main__':
     load_dotenv()
+
+    print(get_authorization_token())
