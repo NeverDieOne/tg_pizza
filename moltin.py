@@ -4,9 +4,7 @@ from dotenv import load_dotenv
 import datetime
 import requests
 from slugify import slugify
-from pprint import pprint
-
-from tg_bot import get_database_connection
+from utils import get_database_connection
 
 token_expire, token = None, None
 

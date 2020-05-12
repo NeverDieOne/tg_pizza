@@ -1,19 +1,16 @@
 import os
 from dotenv import load_dotenv
-import requests
 from flask import Flask, request
-from utils import generate_facebook_menu, genearage_facebook_main_cart, generate_facebook_categories_cart, \
-    send_facebook_message, generage_facebook_cart
-from moltin import get_products_by_category_id, add_product_to_cart, get_products_in_cart, delete_product_from_basket, \
-    get_or_create_cart
-import redis
+from fb_utils import (generate_facebook_menu, genearate_facebook_main_cart, generate_facebook_categories_cart,
+                      send_facebook_message, generage_facebook_cart)
+from moltin import (get_products_by_category_id, add_product_to_cart, get_products_in_cart, delete_product_from_basket,
+                    get_or_create_cart)
+from utils import get_database_connection
 
 load_dotenv()
 
 app = Flask(__name__)
 FACEBOOK_TOKEN = os.environ["PAGE_ACCESS_TOKEN"]
-
-database = None
 
 
 @app.route('/', methods=['GET'])
@@ -98,7 +95,7 @@ def handle_start(sender_id, message_text=None, postback_payload=None):
             "payload": {
                 "template_type": "generic",
                 "elements": [
-                    genearage_facebook_main_cart(),
+                    genearate_facebook_main_cart(),
                     *generate_facebook_menu(get_products_by_category_id(postback_payload)),
                     generate_facebook_categories_cart()]
             }
@@ -113,7 +110,7 @@ def handle_menu(sender_id, message_text=None, postback_payload=None):
     if 'add' in postback_payload:
         product_id = postback_payload.split(', ')[-1]
         add_product_to_cart(cart_id=sender_id, product_id=product_id, product_amount=1)
-        
+
         message = {
             'text': 'Товар успешно добавлен в корзину'
         }
@@ -141,7 +138,7 @@ def handle_menu(sender_id, message_text=None, postback_payload=None):
                 "payload": {
                     "template_type": "generic",
                     "elements": [
-                        genearage_facebook_main_cart(),
+                        genearate_facebook_main_cart(),
                         *generate_facebook_menu(get_products_by_category_id('409e5b44-7e45-426b-bf26-7d1d14f8a6a5')),
                         generate_facebook_categories_cart()]
                 }
@@ -168,17 +165,6 @@ def handle_users_reply(sender_id, message_text=None, postback_payload=None):
     state_handler = states_functions[user_state]
     next_state = state_handler(sender_id, message_text, postback_payload)
     database.set(f'facebookid_{sender_id}', next_state)
-
-
-def get_database_connection():
-    global database
-    if database is None:
-        database = redis.Redis(
-            host=os.getenv('DATABASE_HOST'),
-            port=os.getenv('DATABASE_PORT'),
-            db=os.getenv('DATABASE_NUMBER')
-        )
-    return database
 
 
 if __name__ == '__main__':

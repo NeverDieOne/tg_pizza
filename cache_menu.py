@@ -1,24 +1,11 @@
 import time
-import redis
-import os
 import requests
 from dotenv import load_dotenv
 from moltin import get_authorization_token, get_all_categories
 import json
+from utils import get_database_connection
 
 load_dotenv()
-database = None
-
-
-def get_database_connection():
-    global database
-    if database is None:
-        database = redis.Redis(
-            host=os.getenv('DATABASE_HOST'),
-            port=os.getenv('DATABASE_PORT'),
-            db=os.getenv('DATABASE_NUMBER')
-        )
-    return database
 
 
 def create_menu(category_id):
