@@ -398,5 +398,10 @@ def get_products_by_category_id(category_id):
     return menu
 
 
+def get_categories_dict():
+    categories = get_all_categories()
+    return {category['slug']: category['id'] for category in categories}
+
+
 if __name__ == '__main__':
     load_dotenv()
