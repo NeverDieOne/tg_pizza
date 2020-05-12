@@ -27,6 +27,11 @@
 
 ![Sample](https://media.giphy.com/media/gflsfushe82IkhcMQ9/giphy.gif)
 
+## Facebook webhook 
+Для использоввания вебхука фейсбук требуется добавить следующие переменные в `.env`:
+    * `PAGE_ACCESS_TOKEN` - токен вашего приложения на Facebook
+    * `VERIFY_TOKEN` - любой токен (является маркером подтверждения)
+    
 ## Цель проекта
 
 Код написан в образовательных целях на онлайн-курсе для веб-разработчиков [Devman](https://dvmn.org/modules)

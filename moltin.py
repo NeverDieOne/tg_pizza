@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import datetime
 import requests
 from slugify import slugify
-
+from utils import get_database_connection
 
 token_expire, token = None, None
 
@@ -377,6 +377,30 @@ def get_flows():
     respone.raise_for_status()
 
     return respone.json()['data']
+
+
+def get_all_categories():
+    token = get_authorization_token()
+    url = 'https://api.moltin.com/v2/categories'
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    respone = requests.get(url, headers=headers)
+    respone.raise_for_status()
+
+    return respone.json()['data']
+
+
+def get_products_by_category_id(category_id):
+    database = get_database_connection()
+    json_menu = database.get(f'menu_{category_id}')
+    menu = json.loads(json_menu)
+    return menu
+
+
+def get_categories_dict():
+    categories = get_all_categories()
+    return {category['slug']: category['id'] for category in categories}
 
 
 if __name__ == '__main__':

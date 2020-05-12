@@ -1,15 +1,15 @@
 import os
 import logging
-import redis
 from telegram.ext import Filters, Updater, PreCheckoutQueryHandler
 from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from dotenv import load_dotenv
 import moltin
-import utils
+import tg_utils
 from yandex_geocoder import Client, exceptions
 import json
 import payment
+from utils import get_database_connection
 
 database = None
 
@@ -17,7 +17,7 @@ database = None
 def start(bot, update, job_queue):
     moltin.get_or_create_cart(update.message.chat_id)
 
-    reply_markup = utils.create_menu_markup()
+    reply_markup = tg_utils.create_menu_markup()
 
     update.message.reply_text(text='Выберите товар:', reply_markup=reply_markup)
     return "HANDLE_MENU"
@@ -27,11 +27,11 @@ def handle_menu(bot, update, job_queue):
     query = update.callback_query
 
     if query.data == 'cart':
-        utils.show_cart(query, bot, update)
+        tg_utils.show_cart(query, bot, update)
         return "HANDLE_CART"
     elif 'pag' in query.data:
         page = query.data.split(', ')[1]
-        reply_markup = utils.create_menu_markup(int(page))
+        reply_markup = tg_utils.create_menu_markup(int(page))
 
         bot.edit_message_text(text='Выберите товар:',
                               chat_id=query.message.chat_id,
@@ -65,7 +65,7 @@ def handle_description(bot, update, job_queue):
     command, product_id = query.data.split(', ')
 
     if command == 'back':
-        reply_markup = utils.create_menu_markup()
+        reply_markup = tg_utils.create_menu_markup()
 
         #  Если здесь использовать edit_message_text, то будет ошибка: 'NoneType' object has no attribute 'reply_text'
         #  т.к. в описании картинки не text, а caption
@@ -77,7 +77,7 @@ def handle_description(bot, update, job_queue):
         return "HANDLE_MENU"
 
     elif command == 'cart':
-        utils.show_cart(query, bot, update)
+        tg_utils.show_cart(query, bot, update)
         return "HANDLE_CART"
     elif command == 'add':
         moltin.add_product_to_cart(cart_id=query.message.chat_id,
@@ -91,7 +91,7 @@ def handle_cart(bot, update, job_queue):
     payment_and_price = query.data.split(', ')
 
     if query.data == 'menu':
-        reply_markup = utils.create_menu_markup()
+        reply_markup = tg_utils.create_menu_markup()
 
         bot.edit_message_text(text='Выберите товар:',
                               chat_id=query.message.chat_id,
@@ -104,7 +104,7 @@ def handle_cart(bot, update, job_queue):
         return "HANDLE_WAITING"
     else:
         moltin.delete_product_from_basket(query.message.chat_id, query.data)
-        utils.show_cart(query, bot, update)
+        tg_utils.show_cart(query, bot, update)
         return "HANDLE_CART"
 
 
@@ -130,21 +130,21 @@ def handle_waiting(bot, update, job_queue):
 
     moltin.create_customer_address(current_pos, update.message.chat_id)
     entries = moltin.get_entries(flow_slug)
-    closest_entry = utils.get_closest_entry(current_pos, entries)
+    closest_entry = tg_utils.get_closest_entry(current_pos, entries)
     supplier = closest_entry['telegram-id']
     _distance = round(closest_entry["distance"], 1)
 
     if closest_entry['distance'] < 0.5:
         reply = f'Может, заберете пиццу из нашей пиццерии неподалеку? Она всего в {_distance} км от Вас! ' \
             f'Вот ее адрес: {closest_entry["address"]}\n\nА можем и бесплатно доставить, нам не сложно c:'
-        reply_markup = utils.create_delivery_menu(supplier, current_pos)
+        reply_markup = tg_utils.create_delivery_menu(supplier, current_pos)
     elif closest_entry['distance'] < 5:
         reply = f'Похоже, придется ехать до Вас на самокате. ' \
             f'Доставка будет стоить 100 рублей. Доставляем или самовывоз?'
-        reply_markup = utils.create_delivery_menu(supplier, current_pos)
+        reply_markup = tg_utils.create_delivery_menu(supplier, current_pos)
     elif closest_entry['distance'] < 20:
         reply = f'А Вы не так близки к нам :c Доставка будет стоить 300 рублей.'
-        reply_markup = utils.create_delivery_menu(supplier, current_pos)
+        reply_markup = tg_utils.create_delivery_menu(supplier, current_pos)
     else:
         reply = f'Простите, но так далеко пиццу не доставим. Ближайшая пиццерия аж в {_distance} км от Вас!'
         reply_markup = None
@@ -197,7 +197,7 @@ def handle_users_reply(bot, update, job_queue):
     if user_reply == '/start':
         user_state = 'START'
     else:
-        user_state = database.get(chat_id).decode("utf-8")
+        user_state = database.get(f'telegramid_{chat_id}').decode("utf-8")
 
     states_functions = {
         'START': start,
@@ -209,18 +209,10 @@ def handle_users_reply(bot, update, job_queue):
     }
     state_handler = states_functions[user_state]
     next_state = state_handler(bot, update, job_queue)
-    database.set(chat_id, next_state)
+    database.set(f'telegramid_{chat_id}', next_state)
 
 
-def get_database_connection():
-    global database
-    if database is None:
-        database = redis.Redis(
-            host=os.getenv('DATABASE_HOST'),
-            port=os.getenv('DATABASE_PORT'),
-            db=os.getenv('DATABASE_NUMBER')
-        )
-    return database
+
 
 
 def error_callback(bot, update, error):
