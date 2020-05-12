@@ -16,7 +16,7 @@ def genearate_facebook_main_cart():
 def generate_facebook_menu(products_list=None) -> list:
     if not products_list:
         products_list = moltin.get_products()
-    prodcuts = []
+    products_carts = []
 
     for product in products_list:
         product_name = product["name"]
@@ -27,7 +27,7 @@ def generate_facebook_menu(products_list=None) -> list:
         photo_id = product["relationships"]["main_image"]["data"]["id"]
         product_photo_url = moltin.get_photo_url_by_id(photo_id)
 
-        prodcuts.append({
+        products_carts.append({
             "title": f'{product_name} ({product_price} руб.)',
             "subtitle": product_description,
             "image_url": product_photo_url,
@@ -36,7 +36,7 @@ def generate_facebook_menu(products_list=None) -> list:
             ]
         })
 
-    return prodcuts
+    return products_carts
 
 
 def generate_facebook_categories_cart():
